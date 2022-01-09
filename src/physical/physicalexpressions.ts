@@ -1,8 +1,4 @@
-import {
-    BoolVector,
-    Int32,
-    Utf8
-} from "apache-arrow";
+import {Bool, BoolVector, Int32, Int32Vector, Type, Utf8, Utf8Vector} from "apache-arrow";
 import {Vector} from "apache-arrow/vector";
 import {LiteralValueVector, RecordBatch} from "../vectors";
 
@@ -38,7 +34,7 @@ export class LiteralNumberExpression implements PhysicalExpression {
         this.value = value;
     }
 
-    evaluate(input: RecordBatch): Vector {
+    evaluate(input: RecordBatch): Vector<Int32> {
         return new LiteralValueVector<Int32, number>(this.value, input.rowCount());
     }
 
@@ -55,7 +51,7 @@ export class LiteralStringExpression implements PhysicalExpression {
         this.value = value;
     }
 
-    evaluate(input: RecordBatch): Vector {
+    evaluate(input: RecordBatch): Vector<Utf8> {
         return new LiteralValueVector<Utf8, string>(this.value, input.rowCount());
     }
 }
@@ -87,14 +83,36 @@ export abstract class BinaryExpression implements PhysicalExpression {
         return this.evaluateVectors(leftResult, rightResult);
     }
 
+    toString(): string {
+        return
+    }
+
     abstract evaluateVectors(left: Vector, right: Vector): Vector;
 }
 
+// Math Expressions
+export class AddExpression extends BinaryExpression {
+    evaluateVectors(left: Vector, right: Vector): Vector {
+        const results = new Array<any>();
+        for (let i = 0; i < left.length; i++) {
+            let assertionResult = left.get(i) + right.get(i);
+            results.push(assertionResult)
+        }
+
+        if (left.typeId == Type.Int && right.typeId == Type.Int) {
+            return Int32Vector.from(results);
+        } else if (left.typeId == Type.Utf8 || right.typeId == Type.Utf8) {
+            return Utf8Vector.from(results);
+        } else {
+            return Utf8Vector.from(results);
+        }
+    }
+}
 
 // Comparison Expressions
 export abstract class BooleanExpression extends BinaryExpression {
 
-    evaluateVectors(left: Vector, right: Vector): Vector {
+    evaluateVectors(left: Vector, right: Vector): Vector<Bool> {
         const results = new Array<boolean>()
         for (let i = 0; i < left.length; i++) {
             let assertionResult = this.compare(left.get(i), right.get(i))

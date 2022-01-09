@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <script src="dist/main.js"></script>
+</head>
+
+<body>
+
+    <input type="file" id="filePicker" accept=".csv"><br/>
+    <textarea id="sqlBox" name="sqlBox" rows="4" cols="50">
+    </textarea>
+    <button id="generate" onclick="handleButton()">Generate</button>
+    <script>
+        function handleFiles() {
+            const input = document.querySelector("#filePicker")
+            const file = input.files[0];
+            sqlengine.start(file).then(_ => {})
+        }
+
+        function handleButton() {
+            const sqlTextArea = document.querySelector("#sqlBox");
+            const input = document.querySelector("#filePicker")
+            const file = input.files[0];
+            sqlengine.start(file, sqlTextArea.value).then(_ => {})
+        }
+
+        // const input = document.querySelector("#filePicker")
+        // input.addEventListener("change", handleFiles, false);
+
+    </script>
+</body>
+</html>

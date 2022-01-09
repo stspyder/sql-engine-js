@@ -1,5 +1,5 @@
 import {LogicalPlan} from './logicalplan';
-import {Bool, Field, Int64, Utf8} from "apache-arrow";
+import {Bool, Field, Int64, Null, Utf8} from "apache-arrow";
 import {SQLError} from "../errors";
 import {BooleanOperator, MathOperator} from "../types";
 
@@ -67,6 +67,16 @@ export class LiteralInt implements LogicalExpression {
     }
 }
 
+export class LiteralNull implements LogicalExpression {
+    async toField(input: LogicalPlan): Promise<Field> {
+        return new Field("null", new Null());
+    }
+
+    toString(): string {
+        return `NULL`;
+    }
+}
+
 //  Binary expressions
 export abstract class BinaryExpression implements LogicalExpression {
     protected readonly name: string;
@@ -111,6 +121,36 @@ export class NotEquals extends BooleanBinaryExpression {
     }
 }
 
+export class IsNull extends BooleanBinaryExpression {
+    constructor(input: LogicalExpression) {
+        super("is-null", BooleanOperator.Equals, input, new LiteralNull());
+    }
+}
+
+export class GreaterThan extends BooleanBinaryExpression {
+    constructor(left: LogicalExpression, right: LogicalExpression) {
+        super("greater", BooleanOperator.GraterThan, left, right);
+    }
+}
+
+export class LessThan extends BooleanBinaryExpression {
+    constructor(left: LogicalExpression, right: LogicalExpression) {
+        super("lesser", BooleanOperator.LessThan, left, right);
+    }
+}
+
+export class GreaterThanEquals extends BooleanBinaryExpression {
+    constructor(left: LogicalExpression, right: LogicalExpression) {
+        super("greater-than-equals", BooleanOperator.GreaterThanEquals, left, right);
+    }
+}
+
+export class LessThanEquals extends BooleanBinaryExpression {
+    constructor(left: LogicalExpression, right: LogicalExpression) {
+        super("less-than-equals", BooleanOperator.LessThanEquals, left, right);
+    }
+}
+
 export class And extends BooleanBinaryExpression {
     constructor(left: LogicalExpression, right: LogicalExpression) {
         super("and", BooleanOperator.And, left, right);
@@ -132,7 +172,7 @@ export abstract class MathExpression extends BinaryExpression {
 
     async toField(input: LogicalPlan): Promise<Field> {
         let inputField = await this.left.toField(input);
-        return new Field(this.name, inputField.type);
+        return new Field(this.toString(), inputField.type);
     }
 }
 
@@ -212,4 +252,29 @@ export class Count extends AggregateExpression {
     async toField(input: LogicalPlan): Promise<Field> {
         return new Field(this.name, new Int64());
     }
+}
+
+export class Alias implements LogicalExpression {
+
+    private readonly _alias: string;
+    private readonly _expression: LogicalExpression
+
+    constructor(alias: string, expression: LogicalExpression) {
+        this._alias = alias;
+        this._expression = expression;
+    }
+
+    async toField(input: LogicalPlan): Promise<Field> {
+        let expressionField = await this._expression.toField(input)
+        return new Field(this._alias, expressionField.type);
+    }
+
+    get expression(): LogicalExpression {
+        return this._expression;
+    }
+
+    toString(): string {
+        return `${this._expression.toString()} as ${this._alias}`
+    }
+
 }

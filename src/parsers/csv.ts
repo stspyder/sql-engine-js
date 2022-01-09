@@ -54,7 +54,7 @@ export class CSVParser {
                 continue;
             }
 
-            // If it's a comma and we're not in a quoted field, move on to the next column
+            // If it's a comma, and we're not in a quoted field, move on to the next column
             if (cc == ',' && !quote) {
                 ++col;
                 continue;

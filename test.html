@@ -1,30 +1,14 @@
-<!DOCTYPE html>
+<!doctype html>
 <html>
 <head>
-    <meta charset="utf-8">
-    <script src="dist/bundle.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jasmine/3.7.0/jasmine.min.css">
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jasmine/3.7.0/jasmine.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jasmine/3.7.0/jasmine-html.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jasmine/3.7.0/boot.min.js"></script>
+  <!-- optional: include a file here that configures the Jasmine env -->
+  <!-- <script src="lib/jasmine-{#.#.#}/boot1.js"></script> -->
+  <script src="dist/specs.js"></script>
 </head>
 
-<body>
-
-    <input type="file" id="filePicker" accept=".csv"><br/>
-    <textarea id="sqlBox" name="sqlBox" rows="4" cols="50">
-    </textarea>
-    <button id="generate" onclick="handleButton()">Generate</button>
-    <script>
-        function handleFiles() {
-            const file = this.files[0];
-            sqlengine.start(file).then(_ => {})
-        }
-
-        function handleButton() {
-            const sqlTextArea = document.querySelector("#sqlBox");
-            sqlengine.parseSql(sqlTextArea.value)
-        }
-
-        const input = document.querySelector("#filePicker")
-        input.addEventListener("change", handleFiles, false);
-
-    </script>
-</body>
 </html>

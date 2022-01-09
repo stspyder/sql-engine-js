@@ -1,34 +1,41 @@
-import {CSVDataSource} from "./datasource";
-import {Field, Schema, Utf8} from "apache-arrow";
-import {format, Projection, Scan, Selection} from "./logical/logicalplan";
-import {Column, Equals, LiteralString} from "./logical/logicalexpressions";
+import {CSVDataSource, DataSource} from "./datasource";
+import {Field, Schema, Utf8, Int32} from "apache-arrow";
+import {format} from "./logical/logicalplan";
 import {QueryPlanner} from "./planner/queryplanner";
 
 import * as sqlParser from "js-sql-parser";
+import {Planner} from "./logical/planner";
 
 
 
-export async function start(file: File) {
+export async function start(file: File, sqlQuery: string) {
     let fields = [
-        new Field<Utf8>("day", new Utf8()),
-        new Field<Utf8>("dsp_name", new Utf8()),
-        new Field<Utf8>("buyer_name", new Utf8()),
-        new Field<Utf8>("ad_spend", new Utf8()),
+        new Field<Utf8>("Month", new Utf8()),
+        new Field<Int32>("1958", new Int32()),
+        new Field<Int32>("1959", new Int32()),
+        new Field<Int32>("1960", new Int32()),
     ];
 
     const csvDataSource = new CSVDataSource(file, new Schema<any>(fields));
-    const scan = new Scan(file.name, csvDataSource);
-    const selection = new Selection(scan, new Equals(new Column("buyer_name"), new LiteralString("Automatad Inc.")));
-    const projection = new Projection(selection, [ new Column("ad_spend"), new Column("day"), new Column("dsp_name"), new Column("buyer_name")])
+    const logicalPlanner = new Planner(new Map<string, DataSource>([
+        ["air_travel", csvDataSource],
+    ]))
 
-    console.log(format(projection));
+    let ast = sqlParser.parse(sqlQuery);
+    console.log(JSON.stringify(ast, null, 2));
 
-    const queryPlanner = new QueryPlanner();
-    const physicalPlan = await queryPlanner.createPhysicalPlan(projection);
+    const logicalPlan = logicalPlanner.buildPlan(ast);
+    console.log(format(logicalPlan));
+
+    const physicalPlanner = new QueryPlanner();
+    const physicalPlan = await physicalPlanner.createPhysicalPlan(logicalPlan);
 
     for await (const recordBatch of physicalPlan.execute()) {
+        let schema = await physicalPlan.getSchema();
+        let fieldNames = schema.fields.map(f => f.name);
+        console.log(fieldNames.join(", "));
         for (let r=0; r<recordBatch.rowCount(); r++) {
-            let row = []
+            let row = [];
             for (let c = 0; c < recordBatch.columnCount(); c++) {
                 row.push(recordBatch.get(c).get(r))
             }

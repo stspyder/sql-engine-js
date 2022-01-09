@@ -123,3 +123,23 @@ export class SelectionExec implements PhysicalPlan {
     }
 
 }
+
+
+export class HashAggregate implements PhysicalPlan {
+
+    constructor(input: PhysicalPlan, groupExpressions: Array<PhysicalExpression>, ) {
+    }
+
+    execute(): AsyncGenerator<RecordBatch, void, void> {
+        return undefined;
+    }
+
+    getChildren(): Array<PhysicalPlan> {
+        return undefined;
+    }
+
+    getSchema(): Promise<Schema> {
+        return Promise.resolve(undefined);
+    }
+
+}

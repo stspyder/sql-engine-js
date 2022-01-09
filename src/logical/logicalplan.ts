@@ -105,7 +105,8 @@ export class Aggregate implements LogicalPlan {
     private readonly groupingExpression: Array<LogicalExpression>;
     private readonly aggregateExpression: Array<AggregateExpression>;
 
-    constructor(input: LogicalPlan, groupingExpression: Array<LogicalExpression>, aggregateExpression: Array<AggregateExpression>) {
+    constructor(input: LogicalPlan, groupingExpression: Array<LogicalExpression>,
+      aggregateExpression: Array<AggregateExpression>) {
         this.input = input;
         this.groupingExpression = groupingExpression;
         this.aggregateExpression = aggregateExpression;

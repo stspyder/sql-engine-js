@@ -5,21 +5,15 @@
   "main": "index.js",
   "scripts": {
     "build": "npx webpack --config=webpack.config.js",
-    "test": "jasmine-ts --config=jasmine.json"
+    "test": "jasmine-ts --config=jasmine.json --project tsconfig"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "devDependencies": {
     "@types/jasmine": "^3.6.10",
-    "@types/papaparse": "^5.2.5",
     "jasmine": "^3.7.0",
-    "jasmine-spec-reporter": "^7.0.0",
     "jasmine-ts": "^0.3.3",
-    "karma": "^6.3.3",
-    "karma-chrome-launcher": "^3.1.0",
-    "karma-jasmine": "^4.0.1",
-    "karma-typescript": "^5.5.1",
     "ts-loader": "^9.1.1",
     "ts-node": "^9.1.1",
     "typescript": "^4.2.4",

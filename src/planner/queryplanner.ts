@@ -1,19 +1,24 @@
 import {LogicalPlan, Projection, Scan, Selection} from "../logical/logicalplan";
 import {PhysicalPlan, ProjectionExec, ScanExec, SelectionExec} from "../physical/physicalplan";
 import {
+    Add, Alias,
     And,
     BinaryExpression,
     Column,
     Equals,
     LiteralInt,
     LiteralString,
-    LogicalExpression, NotEquals, Or
+    LogicalExpression,
+    Or
 } from "../logical/logicalexpressions";
 import {
+    AddExpression,
     AndExpression,
-    ColumnExpression, EqExpression,
+    ColumnExpression,
+    EqExpression,
     LiteralNumberExpression,
-    LiteralStringExpression, OrExpression,
+    LiteralStringExpression,
+    OrExpression,
     PhysicalExpression
 } from "../physical/physicalexpressions";
 import {Schema} from "apache-arrow";
@@ -39,7 +44,9 @@ export class QueryPlanner {
 
 
     async createPhysicalExpr(le: LogicalExpression, lp: LogicalPlan): Promise<PhysicalExpression> {
-        if (le instanceof LiteralString) {
+        if (le instanceof Alias) {
+            return this.createPhysicalExpr(le.expression, lp);
+        } else if (le instanceof LiteralString) {
             return new LiteralStringExpression(le.value);
         } else if (le instanceof LiteralInt) {
             return new LiteralNumberExpression(le.value);
@@ -53,7 +60,7 @@ export class QueryPlanner {
             }
         } else if (le instanceof BinaryExpression) {
             let left = await this.createPhysicalExpr(le.left, lp);
-            let right = await this.createPhysicalExpr(le.right, lp)
+            let right = await this.createPhysicalExpr(le.right, lp);
 
             // Check the subtype
             // Comparison Expressions
@@ -63,7 +70,9 @@ export class QueryPlanner {
                 return new AndExpression(left, right);
             } else if (le instanceof Or) {
                 return new OrExpression(left, right);
-            // TODO NotEquals, LessThan, GreaterThan
+                // TODO NotEquals, LessThan, GreaterThan
+            } else if (le instanceof Add) {
+                return new AddExpression(left, right);
             } else {
                 throw new IllegalStateError("Unsupported binary expression: " + le.toString());
             }

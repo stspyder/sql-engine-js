@@ -3,7 +3,10 @@ const path = require('path');
 
 module.exports = {
     mode: 'development',
-    entry: './src/index.ts',
+    entry: {
+      main: './src/index.ts',
+      specs: './spec/index.ts'
+    },
     devtool: 'inline-source-map',
     module: {
         rules: [
@@ -11,7 +14,7 @@ module.exports = {
                 test: /\.tsx?$/,
                 use: 'ts-loader',
                 exclude: /node_modules/,
-                include: path.resolve(__dirname, "src"),
+                include: [path.resolve(__dirname, "src"), path.resolve(__dirname, "spec")]
             },
         ],
     },
@@ -19,7 +22,7 @@ module.exports = {
         extensions: [ '.tsx', '.ts', '.js' ],
     },
     output: {
-        filename: 'bundle.js',
+        filename: '[name].js',
         path: path.resolve(__dirname, 'dist'),
         library: "sqlengine",
     },

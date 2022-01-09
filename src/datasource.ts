@@ -1,7 +1,7 @@
 import {
     Bool,
     DataType,
-    Field,
+    Field, Int16Vector,
     Int32,
     Int32Vector,
     Schema,
@@ -24,17 +24,24 @@ export class CSVDataSource implements DataSource {
     private readonly file: File;
     private _schema?: Schema;
     private readonly parser: CSVParser;
+    private readonly firstLineHeader: boolean;
 
-    constructor(file: File, schema?: Schema) {
+    constructor(file: File, schema?: Schema, firstLineHeader: boolean = true) {
         this.file = file;
         this._schema = schema;
+        this.firstLineHeader = firstLineHeader;
         this.parser = new CSVParser(this.file);
     }
 
     async* scan(projection: Array<string>): AsyncGenerator<RecordBatch, void, void> {
         let schema = await this.schema();
-        for await (const rows of this.parser.parseRows()) {
+        let headerRemoved = false;
+        for await (let rows of this.parser.parseRows()) {
             console.log("CSV Data Source: Parsed batch with size: " + rows.length);
+
+            if (!headerRemoved && this.firstLineHeader) {
+                rows = rows.slice(1);
+            }
             let allColumnVectors = new Array<Vector>();
             let actualProjection = projection.length == 0? schema.fields.map(f => f.name) : projection;
             for (let projectedField of actualProjection) {
@@ -43,8 +50,8 @@ export class CSVDataSource implements DataSource {
                     if (projectedField != field.name) {
                         continue;
                     }
-                    let fieldType = field.type as DataType;
-                    switch (fieldType.typeId) {
+
+                    switch (field.typeId) {
                         case Type.Utf8: {
                             let mappedRows = rows.map(row => row[index] as string);
                             let utf8Vector = Utf8Vector.from(mappedRows);
@@ -56,6 +63,13 @@ export class CSVDataSource implements DataSource {
                             let int32Array = Int32Array.of(...rows.map(row => row[index] as number));
                             let int32Vector = Int32Vector.from(int32Array);
                             allColumnVectors.push(int32Vector);
+                            break;
+                        }
+
+                        case Type.Int16: {
+                            let int16Array = Int16Array.of(...rows.map(row => row[index] as number));
+                            let int16Vector = Int16Vector.from(int16Array);
+                            allColumnVectors.push(int16Vector);
                             break;
                         }
 
@@ -74,9 +88,10 @@ export class CSVDataSource implements DataSource {
 
     async schema(): Promise<Schema> {
         if (this._schema) {
-            return new Promise<Schema>((resolve, reject) => {
-                resolve(this._schema);
-            });
+            // return new Promise<Schema>((resolve, reject) => {
+            //     resolve(this._schema);
+            // });
+            return this._schema;
         }
 
         // TODO parser does not support schema detection
