@@ -1,7 +1,7 @@
 import {LogicalPlan} from './logicalplan';
-import {Bool, Field, Int64, Null, Utf8} from "apache-arrow";
 import {SQLError} from "../errors";
-import {BooleanOperator, MathOperator} from "../types";
+import {BooleanOperator, DataType, MathOperator} from "../types";
+import {Field} from "../schema";
 
 
 export interface LogicalExpression {
@@ -43,7 +43,7 @@ export class LiteralString implements LogicalExpression {
     }
 
    async toField(input: LogicalPlan): Promise<Field> {
-        return new Field(this.value, new Utf8());
+        return new Field(this.value, DataType.String);
    }
 
     toString(): string {
@@ -51,7 +51,7 @@ export class LiteralString implements LogicalExpression {
     }
 }
 
-export class LiteralInt implements LogicalExpression {
+export class LiteralNumber implements LogicalExpression {
     readonly value: number;
 
     constructor(value: number) {
@@ -59,7 +59,7 @@ export class LiteralInt implements LogicalExpression {
     }
 
     async toField(input: LogicalPlan): Promise<Field> {
-        return new Field(this.value.toString(), new Int64());
+        return new Field(this.value.toString(), DataType.Number);
     }
 
     toString(): string {
@@ -69,7 +69,7 @@ export class LiteralInt implements LogicalExpression {
 
 export class LiteralNull implements LogicalExpression {
     async toField(input: LogicalPlan): Promise<Field> {
-        return new Field("null", new Null());
+        return new Field("null", DataType.NULL);
     }
 
     toString(): string {
@@ -105,7 +105,7 @@ export abstract class BooleanBinaryExpression extends BinaryExpression {
     }
 
     async toField(input: LogicalPlan): Promise<Field> {
-        return new Field(this.name, new Bool());
+        return new Field(this.name, DataType.Boolean);
     }
 }
 
@@ -250,7 +250,8 @@ export class Count extends AggregateExpression {
     }
 
     async toField(input: LogicalPlan): Promise<Field> {
-        return new Field(this.name, new Int64());
+        // TODO Convert to BigInt
+        return new Field(this.name, DataType.Number);
     }
 }
 
@@ -276,5 +277,4 @@ export class Alias implements LogicalExpression {
     toString(): string {
         return `${this._expression.toString()} as ${this._alias}`
     }
-
 }

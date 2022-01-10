@@ -4,7 +4,7 @@ import {
     Add, Alias, And,
     BooleanBinaryExpression,
     Column,
-    Divide, Equals, GreaterThan, GreaterThanEquals, IsNull, LessThan, LessThanEquals, LiteralInt, LiteralString,
+    Divide, Equals, GreaterThan, GreaterThanEquals, IsNull, LessThan, LessThanEquals, LiteralNumber, LiteralString,
     LogicalExpression,
     Multiply, NotEquals, Or,
     Subtract,
@@ -106,7 +106,7 @@ export class Planner implements LogicalPlanner {
     planExpression(expr: any): LogicalExpression {
         switch (expr.type) {
             case "Number":
-                return this.wrapWithAlias(expr.alias, new LiteralInt(Number(expr.value)));
+                return this.wrapWithAlias(expr.alias, new LiteralNumber(Number(expr.value)));
             case "String":
                 // Remove quotes
                 let value = expr.value.substring(1, expr.value.length - 1);

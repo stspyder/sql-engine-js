@@ -1,6 +1,6 @@
 import {LogicalExpression, BooleanBinaryExpression, AggregateExpression} from './logicalexpressions';
-import {Schema} from "apache-arrow";
 import {DataSource} from "../datasource";
+import {Schema} from "../schema";
 
 export interface LogicalPlan {
     getSchema(): Promise<Schema>

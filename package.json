@@ -22,7 +22,6 @@
     "webpack-dev-server": "^3.11.2"
   },
   "dependencies": {
-    "apache-arrow": "^4.0.0",
     "js-sql-parser": "^1.4.1"
   }
 }

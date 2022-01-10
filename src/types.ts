@@ -1,5 +1,15 @@
-import {Schema} from "apache-arrow";
-import {Vector} from "apache-arrow/vector";
+export const enum DataType {
+    NULL,
+    Boolean,
+    String,
+    Number,
+    BigInt,
+    Decimal,
+    Date,
+    DateTime,
+    // TODO Add more types
+}
+
 
 export const enum BooleanOperator {
     Equals = "=",

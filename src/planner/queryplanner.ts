@@ -6,7 +6,7 @@ import {
     BinaryExpression,
     Column,
     Equals,
-    LiteralInt,
+    LiteralNumber,
     LiteralString,
     LogicalExpression,
     Or
@@ -21,8 +21,8 @@ import {
     OrExpression,
     PhysicalExpression
 } from "../physical/physicalexpressions";
-import {Schema} from "apache-arrow";
 import {IllegalStateError, SQLError} from "../errors";
+import {Schema} from "../schema";
 
 export class QueryPlanner {
 
@@ -48,7 +48,7 @@ export class QueryPlanner {
             return this.createPhysicalExpr(le.expression, lp);
         } else if (le instanceof LiteralString) {
             return new LiteralStringExpression(le.value);
-        } else if (le instanceof LiteralInt) {
+        } else if (le instanceof LiteralNumber) {
             return new LiteralNumberExpression(le.value);
         } else if (le instanceof Column) {
             let schema = await lp.getSchema();

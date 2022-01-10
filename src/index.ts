@@ -1,25 +1,25 @@
 import {CSVDataSource, DataSource} from "./datasource";
-import {Field, Schema, Utf8, Int32} from "apache-arrow";
 import {format} from "./logical/logicalplan";
 import {QueryPlanner} from "./planner/queryplanner";
 
 import * as sqlParser from "js-sql-parser";
 import {Planner} from "./logical/planner";
-
+import {Field, Schema} from "./schema";
+import {DataType} from "./types";
 
 
 export async function start(file: File, sqlQuery: string) {
     let fields = [
-        new Field<Utf8>("Month", new Utf8()),
-        new Field<Int32>("1958", new Int32()),
-        new Field<Int32>("1959", new Int32()),
-        new Field<Int32>("1960", new Int32()),
+        new Field("Month", DataType.String),
+        new Field("1958", DataType.Number),
+        new Field("1959", DataType.Number),
+        new Field("1960", DataType.Number),
     ];
 
-    const csvDataSource = new CSVDataSource(file, new Schema<any>(fields));
+    const csvDataSource = new CSVDataSource(file, new Schema(fields));
     const logicalPlanner = new Planner(new Map<string, DataSource>([
         ["air_travel", csvDataSource],
-    ]))
+    ]));
 
     let ast = sqlParser.parse(sqlQuery);
     console.log(JSON.stringify(ast, null, 2));

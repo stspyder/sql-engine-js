@@ -1,11 +1,10 @@
-import {Bool, BoolVector, Int32, Int32Vector, Type, Utf8, Utf8Vector} from "apache-arrow";
-import {Vector} from "apache-arrow/vector";
-import {LiteralValueVector, RecordBatch} from "../vectors";
+import {BooleanVector, LiteralNumberVector, LiteralStringVector, NumberVector, RecordBatch, Vector} from "../vectors";
+import {DataType} from "../types";
+import {SQLError} from "../errors";
 
 
 export interface PhysicalExpression {
-    evaluate(input: RecordBatch): Vector
-
+    evaluate(input: RecordBatch): Vector<any>
     toString(): string
 }
 
@@ -16,7 +15,7 @@ export class ColumnExpression implements PhysicalExpression {
         this.index = index;
     }
 
-    evaluate(input: RecordBatch): Vector {
+    evaluate(input: RecordBatch): Vector<any> {
         return input.get(this.index);
     }
 
@@ -34,8 +33,8 @@ export class LiteralNumberExpression implements PhysicalExpression {
         this.value = value;
     }
 
-    evaluate(input: RecordBatch): Vector<Int32> {
-        return new LiteralValueVector<Int32, number>(this.value, input.rowCount());
+    evaluate(input: RecordBatch): Vector<Number> {
+        return new LiteralNumberVector(this.value, input.rowCount());
     }
 
     toString(): string {
@@ -51,8 +50,8 @@ export class LiteralStringExpression implements PhysicalExpression {
         this.value = value;
     }
 
-    evaluate(input: RecordBatch): Vector<Utf8> {
-        return new LiteralValueVector<Utf8, string>(this.value, input.rowCount());
+    evaluate(input: RecordBatch): Vector<String> {
+        return new LiteralStringVector(this.value, input.rowCount());
     }
 }
 
@@ -67,17 +66,17 @@ export abstract class BinaryExpression implements PhysicalExpression {
         this.rightExpression = rightExpression;
     }
 
-    evaluate(input: RecordBatch): Vector {
+    evaluate(input: RecordBatch): Vector<any> {
         let leftResult = this.leftExpression.evaluate(input);
         let rightResult = this.rightExpression.evaluate(input);
 
-        if (leftResult.length != rightResult.length) {
-            throw Error("Binary expression operands did not produce same number of records")
+        if (leftResult.getSize() != rightResult.getSize()) {
+            throw Error("Binary expression operands did not produce same number of records");
         }
 
-        if (leftResult.typeId != rightResult.typeId) {
+        if (leftResult.getType() != rightResult.getType()) {
             throw Error("Binary expression operands do not have the same type: "
-                + leftResult.type + " <> " + rightResult.type)
+                + leftResult.getType() + " <> " + rightResult.getType());
         }
 
         return this.evaluateVectors(leftResult, rightResult);
@@ -87,39 +86,39 @@ export abstract class BinaryExpression implements PhysicalExpression {
         return
     }
 
-    abstract evaluateVectors(left: Vector, right: Vector): Vector;
+    abstract evaluateVectors(left: Vector<any>, right: Vector<any>): Vector<any>;
 }
 
 // Math Expressions
 export class AddExpression extends BinaryExpression {
-    evaluateVectors(left: Vector, right: Vector): Vector {
-        const results = new Array<any>();
-        for (let i = 0; i < left.length; i++) {
-            let assertionResult = left.get(i) + right.get(i);
-            results.push(assertionResult)
+    evaluateVectors(left: Vector<any>, right: Vector<any>): Vector<any> {
+        // At this point both left and right vectors are guaranteed to be of same type
+        // TODO Addition can happen on decimals, big int as well
+        // TODO Allow adding other types and if two numbers add upto to big int, change schema
+        if (left.getType() !== DataType.Number) {
+            throw new SQLError(`Cannot add non-numeric types: ${this.toString()}`);
+        }
+        const results = new Array<number>();
+        for (let i = 0; i < left.getSize(); i++) {
+            let assertionResult = left.get(i) as number + right.get(i) as number;
+            results.push(assertionResult);
         }
 
-        if (left.typeId == Type.Int && right.typeId == Type.Int) {
-            return Int32Vector.from(results);
-        } else if (left.typeId == Type.Utf8 || right.typeId == Type.Utf8) {
-            return Utf8Vector.from(results);
-        } else {
-            return Utf8Vector.from(results);
-        }
+        return new NumberVector(results);
     }
 }
 
 // Comparison Expressions
 export abstract class BooleanExpression extends BinaryExpression {
 
-    evaluateVectors(left: Vector, right: Vector): Vector<Bool> {
+    evaluateVectors(left: Vector<any>, right: Vector<any>): Vector<boolean> {
         const results = new Array<boolean>()
-        for (let i = 0; i < left.length; i++) {
+        for (let i = 0; i < left.getSize(); i++) {
             let assertionResult = this.compare(left.get(i), right.get(i))
             results.push(assertionResult)
         }
 
-        return BoolVector.from(results)
+        return new BooleanVector(results);
     }
 
     abstract compare(leftValue: any, rightValue: any): boolean

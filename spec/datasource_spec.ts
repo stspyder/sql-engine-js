@@ -1,8 +1,14 @@
 import {CSVDataSource} from "../src/datasource";
+import {Field, Schema} from "../src/schema";
+import {DataType} from "../src/types";
 
 describe("When a CSV data source is created and is scanned", () => {
     const file = new File(["col1,col2\nSriram,1\nHarini,2\n"], "testFile.csv", {type: "text/csv"});
-    const dataSource = new CSVDataSource(file)
+    const schema = new Schema([
+        new Field("col1", DataType.String),
+        new Field("col2", DataType.Number)
+    ]);
+    const dataSource = new CSVDataSource(file, schema);
 
     it("it should return a record batch with right data", async () => {
         let allRows = [];

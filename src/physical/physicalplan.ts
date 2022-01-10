@@ -1,8 +1,9 @@
-import {BoolVector, DataType, Int32Vector, Schema, Type, Utf8Vector} from "apache-arrow";
 import {DataSource} from "../datasource";
 import {PhysicalExpression} from "./physicalexpressions";
-import {RecordBatch} from "../vectors";
+import {BooleanVector, NumberVector, RecordBatch, StringVector} from "../vectors";
 import {IllegalStateError} from "../errors";
+import {Schema} from "../schema";
+import {DataType} from "../types";
 
 export interface PhysicalPlan {
     getSchema(): Promise<Schema>
@@ -76,36 +77,39 @@ export class SelectionExec implements PhysicalPlan {
 
     async* execute(): AsyncGenerator<RecordBatch, void, void> {
         for await (const recordBatch of this.input.execute()) {
-            let resultVector = this.expression.evaluate(recordBatch) as BoolVector;
-            if (resultVector.length != recordBatch.rowCount()) {
+            let booleanVector = this.expression.evaluate(recordBatch) as BooleanVector;
+            if (booleanVector.getSize() != recordBatch.rowCount()) {
                 throw new IllegalStateError("row count mismatch when evaluating expression")
             }
             let schema = recordBatch.getSchema();
             let filteredVectors = schema.fields.map((field, index) => {
-                let fieldType = field.type as DataType;
+                let fieldType = field.type;
                 let columnVector = recordBatch.get(index);
 
                 let rows = [];
-                for (let r = 0; r < columnVector.length; r++) {
-                    if (resultVector.get(r)) {
+                for (let r = 0; r < columnVector.getSize(); r++) {
+                    if (booleanVector.get(r)) {
                         let value = columnVector.get(r);
                         rows.push(value);
                     }
                 }
 
                 // TODO this cannot scale as we start supporting more types
-                switch (fieldType.typeId) {
-                    case Type.Utf8: {
-                        return Utf8Vector.from(rows);
+                switch (field.type) {
+                    case DataType.String: {
+                        return new StringVector(rows);
                     }
 
-                    case Type.Int: {
-                        let int32Array = Int32Array.of(...rows);
-                        return Int32Vector.from(int32Array);
+                    case DataType.Number: {
+                        return new NumberVector(rows);
+                    }
+
+                    case DataType.Boolean: {
+                        return new BooleanVector(rows);
                     }
 
                     default: {
-                        return Utf8Vector.from(rows);
+                        return new StringVector(rows);
                     }
                 }
             });

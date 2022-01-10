@@ -1,63 +1,102 @@
-import {BaseVector, Data, DataType, DateDay, Int32, Schema, Utf8} from "apache-arrow";
-import {Vector} from "apache-arrow/vector";
+import {DataType} from "./types";
+import {Schema} from "./schema";
 
-export class LiteralValueVector<T extends DataType, R> extends BaseVector<T> {
+export interface Vector<T> {
+    get(i: number): T;
+    getSize(): number;
+    getType(): DataType;
+}
 
-    private readonly value: R;
+export abstract class TypedVector<T> implements Vector<T> {
+    private readonly data: Array<T>;
+
+    constructor(data: Array<T>) {
+        this.data = data;
+    }
+
+    get(i: number): T {
+        return this.data[i];
+    }
+
+    getSize(): number {
+        return this.data.length;
+    }
+
+    abstract getType(): DataType
+}
+
+export class StringVector extends TypedVector<string> {
+    getType(): DataType {
+        return DataType.String;
+    }
+}
+
+export class NumberVector extends TypedVector<number> {
+    getType(): DataType {
+        return DataType.Number;
+    }
+}
+
+export class BooleanVector extends TypedVector<boolean> {
+    getType(): DataType {
+        return DataType.Boolean;
+    }
+
+}
+
+export abstract class LiteralValueVector<T> implements Vector<T> {
+
+    private readonly value: T;
     private readonly size: number;
 
-    constructor(value: R, size: number) {
-        let buffer = []
-        for (let i = 0; i < size; i++) {
-            buffer.push(value)
-        }
-        let data = null;
-        switch (typeof value) {
-            case "string":
-                data = Data.Utf8(new Utf8(), 0, size, 0, null, null, buffer)
-                break;
-            case "number":
-                data = Data.Int(new Int32(), 0, size, 0, null, buffer)
-                break
-            case "object":
-                if (value instanceof Date) {
-                    data = Data.Date(new DateDay(), 0, size, 0, null, buffer)
-                }
-                break
-            default:
-                data = Data.Utf8(new Utf8(), 0, size, 0, null, null, buffer)
-                break;
-        }
-        super(data)
+    constructor(value: T, size: number) {
         this.value = value;
         this.size = size
     }
 
-    get(i: number): R {
+    get(i: number): T {
         return this.value
+    }
+
+    getSize(): number {
+        return this.size;
+    }
+
+    abstract getType(): DataType;
+}
+
+export class LiteralStringVector extends LiteralValueVector<string> {
+    getType(): DataType {
+        return DataType.String;
+    }
+}
+
+export class LiteralNumberVector extends LiteralValueVector<number> {
+    getType(): DataType {
+        return DataType.Number;
     }
 }
 
 export class RecordBatch {
 
     private readonly schema: Schema
-    private readonly vectors: Vector[]
+    private readonly vectors: Array<Vector<any>>;
 
-    constructor(schema: Schema, vectors: Vector[]) {
+    constructor(schema: Schema, vectors: Array<Vector<any>>) {
         this.schema = schema
         this.vectors = vectors
     }
 
     rowCount(): number {
-        return this.vectors[0].length
+        return this.vectors[0].getSize();
     }
 
     columnCount(): number {
-        return this.vectors.length
+        return this.vectors.length;
     }
 
-    get(i: number): Vector {
-        return this.vectors[i]
+    get(i: number): Vector<any> {
+        return this.vectors[i];
     }
 
     getSchema(): Schema {
